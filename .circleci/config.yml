@@ -1,0 +1,89 @@
+version: 2
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/node:14.15
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - run:
+          name: install-yarn
+          command: 'curl -o- -L https://yarnpkg.com/install.sh | bash'
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "yarn.lock" }}
+          - v1-dependencies-
+
+      - run: yarn
+
+      - save_cache:
+          paths:
+          - node_modules
+          key: v1-dependencies-{{ checksum "yarn.lock" }}
+      - run:
+          name: test
+          command: |
+            yarn test:ci
+            npx codecov@3.0.2
+      - run:
+          name: lint
+          command: yarn lint
+      - run:
+          name: build
+          command: yarn build
+  build-and-publish-image:
+    docker:
+      - image: docker:19
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.13
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -f ./Dockerfile.prd -t pasit/$CIRCLE_PROJECT_REPONAME:${CIRCLE_BRANCH##*/} .
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin 
+            docker push pasit/$CIRCLE_PROJECT_REPONAME:${CIRCLE_BRANCH##*/} 
+            docker tag pasit/$CIRCLE_PROJECT_REPONAME:${CIRCLE_BRANCH##*/} pasit/$CIRCLE_PROJECT_REPONAME:$CIRCLE_SHA1
+            docker push pasit/$CIRCLE_PROJECT_REPONAME:$CIRCLE_SHA1
+  deploy-to-cluster:
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    steps:
+      - checkout
+      - run:
+          name: Install envsubst
+          command: |
+            sudo apt-get update && sudo apt-get -y install gettext-base
+      - run:
+          name: Install kubectl
+          command: |
+            curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+            chmod u+x ./kubectl
+      - run:
+          name: Deploy Code
+          command: |
+            chmod u+x ./scripts/ci-deploy.sh
+            ./scripts/ci-deploy.sh
+
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build-and-test
+      - build-and-publish-image:
+          requires:
+            - build-and-test
+          context:
+            - secret
+      - deploy-to-cluster:
+          requires:
+            - build-and-publish-image
+          context:
+            - secret

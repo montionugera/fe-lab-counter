@@ -1,0 +1,9 @@
+node_modules/
+Dockerfile
+Dockerfile.prd
+.vscode/
+dist/
+.next/
+scripts/
+storybook-static/
+kube/
