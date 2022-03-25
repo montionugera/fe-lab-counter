@@ -1,6 +1,6 @@
-import { Upload, message } from 'antd'
+import { message, Upload } from 'antd'
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons'
-import React, { useRef } from 'react'
+import React from 'react'
 import { RcFile } from 'antd/lib/upload'
 import { uploadFile } from '../../data/svc/file'
 

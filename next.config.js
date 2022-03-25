@@ -6,35 +6,37 @@ const isProd = process.env.NODE_ENV === 'production'
 
 // fix: prevents error when .less files are required by node
 if (typeof require !== 'undefined') {
-  require.extensions['.less'] = () => {}
+    require.extensions['.less'] = () => {}
 }
 
 module.exports = {
-  isProd,
-  ...withCSS({
-    cssModules: true,
-    cssLoaderOptions: {
-      importLoaders: 1,
-      localIdentName: '[local]___[hash:base64:5]',
-    },
-    ...withLess(
-      withSass({
-        lessLoaderOptions: {
-          javascriptEnabled: true,
+    isProd,
+    ...withCSS({
+        cssModules: true,
+        cssLoaderOptions: {
+            importLoaders: 1,
+            localIdentName: '[local]___[hash:base64:5]',
         },
-      }),
-    ),
-  }),
-  i18n: {
-    localeDetection: false,
-    defaultLocale: 'th',
-    locales: ['en', 'th'],
-  },
-  env: {
-    customKey: isProd ? 'prd-value' : 'non-prd-value',
-    userServiceURL: isProd
-      ? 'https://user-svc.api.joymify.com'
-      : 'http://localhost:3000',
-    appURL: isProd ? 'https://user-svc.joymify.com' : 'http://localhost:3005',
-  },
+        ...withLess(
+            withSass({
+                lessLoaderOptions: {
+                    javascriptEnabled: true,
+                },
+            }),
+        ),
+    }),
+    i18n: {
+        localeDetection: false,
+        defaultLocale: 'th',
+        locales: ['en', 'th'],
+    },
+    env: {
+        customKey: isProd ? 'prd-value' : 'non-prd-value',
+        userServiceURL: isProd
+            ? 'https://user-svc.api.joymify.com'
+            : 'http://localhost:3000',
+        appURL: isProd
+            ? 'https://user-svc.joymify.com'
+            : 'http://localhost:3005',
+    },
 }
