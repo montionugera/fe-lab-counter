@@ -3,11 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import { Button, Col, Row } from 'antd'
 import SimpleLayout from '../layouts/simple-layout'
-
-import { useRouter } from 'next/router'
-import { AppState } from '../reducers'
-import { useDispatch, useSelector } from 'react-redux'
-import { UserState } from '../reducers/userReducer'
 import useInterval from 'use-interval'
 import Sound from 'react-sound'
 import useSound from 'use-sound'
@@ -19,6 +14,7 @@ interface PageState {
     displayName: string | null
     startTime: number | null
     labCount: number
+    totalLab: number
     shouldStart: boolean
 }
 
@@ -30,36 +26,52 @@ const _initPageState: () => PageState = () => {
         displayName: 'Gwinn 🏎',
         startTime: null,
         labCount: 0,
+        totalLab: 5,
     }
 }
 
-const CountDownLabel = ({ startTime }: { startTime: number | null }) => {
+const CountDownLabel = ({
+    startTime,
+    labCount,
+    totalLab,
+}: {
+    startTime: number | null
+    labCount: number
+    totalLab: number
+}) => {
     let startTimeDisplay = 'Not Started 🚫'
+    console.log('labCount / totalLab', startTime, '-', labCount, '-', totalLab)
     if (startTime) {
         const [nowInSeconds, setNowInSeconds] = React.useState(
             Date.now() / 1000,
         )
-
         useInterval(() => {
+            if (labCount === totalLab + 1) {
+                return
+            }
             setNowInSeconds(Date.now() / 1000)
         }, 80)
         const [sec, ms] = `${nowInSeconds - startTime}`.split('.')
-        startTimeDisplay = `${sec} : ${ms.substr(0, 3)} `
+        const fixedMs = !ms ? '0' : ms
+        startTimeDisplay = `${Math.floor(parseInt(sec) / 60)} : ${
+            parseInt(sec) % 60
+        } : ${fixedMs.length > 3 ? fixedMs.substr(0, 3) : fixedMs} `
     }
 
     return <h3>{startTimeDisplay}</h3>
 }
 const FacebookLoginPage = () => {
-    const { query, push } = useRouter()
+    // const { query, push } = useRouter()
     // const [play, { stop }] = useSound('/static/sound/countdown.wav')
-    const dispatch = useDispatch()
-    const userState: UserState = useSelector((state: AppState) => state.user)
-    const autoLogin = query.auto_login ? query.auto_login : null
-    const code = query.code ? query.code : null
+    // const dispatch = useDispatch()
+    // const userState: UserState = useSelector((state: AppState) => state.user)
+    // const autoLogin = query.auto_login ? query.auto_login : null
+    // const code = query.code ? query.code : null
     const [pageState, setPageState] = useState<PageState>({
         ..._initPageState(),
     })
     const [playTickSound] = useSound('/static/sound/sound-tick.wav')
+    const [playWinSound] = useSound('/static/sound/win.wav')
 
     useEffect(() => {
         console.log('use effect')
@@ -68,30 +80,47 @@ const FacebookLoginPage = () => {
     }, [])
 
     const [socket, setSocket] = useState<Socket | null>(null)
+    if (socket) {
+        // const deleteMessageListener = (messageID) => {
+        //     console.log(messageID)
+        // }
+        socket.removeAllListeners()
+        socket.on('message', (message) => {
+            console.log(message)
+            if (message == 'ir-1') {
+                console.log('setPageState...', pageState.labCount)
+                if (
+                    pageState.labCount - 1 < pageState.totalLab &&
+                    pageState.startTime
+                ) {
+                    if (pageState.totalLab == pageState.labCount) {
+                        playWinSound()
+                    } else {
+                        playTickSound()
+                    }
+                    setPageState({
+                        ...pageState,
+                        labCount: pageState.labCount + 1,
+                    })
+                }
+            }
+        })
+        // socket.on('deleteMessage', deleteMessageListener)
+    }
     useEffect(() => {
         console.log('init socket', `:3000`)
-        const newSocket = io(`:3000`)
+        const newSocket = io(`http://192.168.2.243:3000`)
         setSocket(newSocket)
-
-        const messageListener = (message) => {
-            console.log(message)
-        }
-
-        const deleteMessageListener = (messageID) => {
-            console.log(messageID)
-        }
-        newSocket.on('message', messageListener)
-        newSocket.on('deleteMessage', deleteMessageListener)
         newSocket.emit('getMessages')
-
         return () => {
             newSocket.close()
         }
     }, [setSocket])
     return (
         <SimpleLayout title="Home">
-            <Row justify="center" style={{ textAlign: 'center' }}>
+            <Row justify="space-around" style={{ textAlign: 'center' }}>
                 <Button
+                    size="large"
                     onClick={() => {
                         console.log('Play')
                         setPageState({
@@ -99,21 +128,41 @@ const FacebookLoginPage = () => {
                             shouldStart: true,
                             labCount: 0,
                             startTime: null,
+                            totalLab: 5,
                         })
                     }}
                 >
-                    Start Lab
+                    Start 5 Lab
                 </Button>
                 <Button
+                    size="large"
                     onClick={() => {
-                        playTickSound()
+                        console.log('Play')
                         setPageState({
                             ...pageState,
-                            labCount: ++pageState.labCount,
+                            shouldStart: true,
+                            labCount: 0,
+                            startTime: null,
+                            totalLab: 20,
                         })
                     }}
                 >
-                    Add Lab
+                    Start 20 Lab
+                </Button>
+                <Button
+                    size="large"
+                    onClick={() => {
+                        console.log('Play')
+                        setPageState({
+                            ...pageState,
+                            shouldStart: true,
+                            labCount: 0,
+                            startTime: null,
+                            totalLab: 100,
+                        })
+                    }}
+                >
+                    Start 100 Lab
                 </Button>
             </Row>
             <Row justify="center" style={{ textAlign: 'center' }}>
@@ -126,8 +175,11 @@ const FacebookLoginPage = () => {
                             <h3> Lab : </h3>
                         </Col>
                         <Col span={8}>
-                            <h3 style={{ fontSize: '5em' }}>
-                                {pageState.labCount}
+                            <h3 style={{ fontSize: '3em' }}>
+                                {pageState.labCount - 1 < 0
+                                    ? 0
+                                    : pageState.labCount - 1}
+                                / {pageState.totalLab}
                             </h3>
                         </Col>
                     </Row>
@@ -136,7 +188,7 @@ const FacebookLoginPage = () => {
                             <h3> Total Time : </h3>
                         </Col>
                         <Col span={8}>
-                            <CountDownLabel startTime={pageState.startTime} />
+                            <CountDownLabel {...pageState} />
                         </Col>
                     </Row>
                 </Col>
