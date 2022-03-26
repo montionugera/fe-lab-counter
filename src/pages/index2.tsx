@@ -13,6 +13,7 @@ interface PageState {
     error: any
     displayName: string | null
     startTime: number | null
+    lastLabTime: number
     labCount: number
     totalLab: number
     shouldStart: boolean
@@ -27,6 +28,7 @@ const _initPageState: () => PageState = () => {
         startTime: null,
         labCount: 0,
         totalLab: 5,
+        lastLabTime: Date.now(),
     }
 }
 
@@ -81,13 +83,13 @@ const FacebookLoginPage = () => {
 
     const [socket, setSocket] = useState<Socket | null>(null)
     if (socket) {
-        // const deleteMessageListener = (messageID) => {
-        //     console.log(messageID)
-        // }
         socket.removeAllListeners()
         socket.on('message', (message) => {
             console.log(message)
-            if (message == 'ir-1') {
+            if (
+                message == 'ir-1' &&
+                Date.now() - pageState.lastLabTime < 1000
+            ) {
                 console.log('setPageState...', pageState.labCount)
                 if (
                     pageState.labCount - 1 < pageState.totalLab &&
@@ -100,6 +102,7 @@ const FacebookLoginPage = () => {
                     }
                     setPageState({
                         ...pageState,
+                        lastLabTime: Date.now(),
                         labCount: pageState.labCount + 1,
                     })
                 }
