@@ -42,7 +42,7 @@ const CountDownLabel = ({
     totalLab: number
 }) => {
     let startTimeDisplay = 'Not Started 🚫'
-    console.log('labCount / totalLab', startTime, '-', labCount, '-', totalLab)
+    // console.log('labCount / totalLab', startTime, '-', labCount, '-', totalLab)
     if (startTime) {
         const [nowInSeconds, setNowInSeconds] = React.useState(
             Date.now() / 1000,
@@ -86,15 +86,15 @@ const FacebookLoginPage = () => {
         socket.removeAllListeners()
         socket.on('message', (message) => {
             console.log(message)
-            if (
-                message == 'ir-1' &&
-                Date.now() - pageState.lastLabTime < 1000
-            ) {
+            if (message == 'ir-1') {
+                const difftime = Date.now() - pageState.lastLabTime
                 console.log('setPageState...', pageState.labCount)
                 if (
                     pageState.labCount - 1 < pageState.totalLab &&
-                    pageState.startTime
+                    pageState.startTime &&
+                    difftime > 2000
                 ) {
+                    console.log('got ir ', pageState.lastLabTime, difftime)
                     if (pageState.totalLab == pageState.labCount) {
                         playWinSound()
                     } else {
