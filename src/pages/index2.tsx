@@ -196,6 +196,11 @@ const FacebookLoginPage = () => {
                     </Row>
                 </Col>
             </Row>
+            <Row style={{ textAlign: 'center' }}>
+                <Col span={20}>
+                    <img src="http://192.168.2.243:8000/stream.mjpg" />
+                </Col>
+            </Row>
             <Sound
                 url="/static/sound/countdown.wav"
                 playStatus={
