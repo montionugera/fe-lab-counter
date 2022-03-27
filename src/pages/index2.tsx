@@ -197,8 +197,11 @@ const FacebookLoginPage = () => {
                 </Col>
             </Row>
             <Row style={{ textAlign: 'center' }}>
-                <Col span={20}>
-                    <img src="http://192.168.2.243:8000/stream.mjpg" />
+                <Col span={24}>
+                    <img
+                        style={{ width: '75%' }}
+                        src="http://192.168.2.243:8000/stream.mjpg"
+                    />
                 </Col>
             </Row>
             <Sound
